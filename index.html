@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrawApp</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --danger-color: #f43f5e;
+            --success-color: #10b981;
+            --text-color: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 80px;
+            background-color: var(--panel-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            border-right: 1px solid #334155;
+            gap: 25px;
+            z-index: 10;
+        }
+
+        .tool-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        label { font-size: 10px; font-weight: 600; text-transform: uppercase; opacity: 0.7; }
+
+        input[type="color"] {
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="range"] {
+            writing-mode: bt-lr; /* Vertical range */
+            width: 80px;
+            height: 4px;
+            accent-color: var(--accent-color);
+        }
+
+        .icon-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .icon-btn:hover { background: var(--accent-color); transform: translateY(-2px); }
+        .btn-danger-alt:hover { background: var(--danger-color); }
+        .btn-success-alt:hover { background: var(--success-color); }
+
+        /* --- MAIN AREA --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+            align-items: center;
+        }
+
+        header { margin-bottom: 20px; text-align: center; }
+        header h1 { margin: 0; font-size: 24px; letter-spacing: -0.5px; }
+
+        .canvas-container {
+            position: relative;
+            background: #ffffff;
+            line-height: 0;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        canvas { cursor: crosshair; touch-action: none; }
+
+        /* --- GALLERY --- */
+        .gallery-section {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 50px;
+            padding-bottom: 50px;
+        }
+
+        .gallery-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .gallery-item {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 10px;
+            position: relative;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid #334155;
+        }
+
+        .gallery-item:hover { transform: scale(1.05); border-color: var(--accent-color); }
+
+        .gallery-item img {
+            width: 100%;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .delete-card {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-weight: bold;
+        }
+
+        .clear-all-btn {
+            background: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .clear-all-btn:hover { background: var(--danger-color); color: white; }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="tool-group">
+            <label>Värv</label>
+            <input type="color" id="colorPicker" value="#38bdf8">
+        </div>
+
+        <div class="tool-group">
+            <label>Size</label>
+            <input type="range" id="lineWidth" min="1" max="50" value="8">
+        </div>
+
+        <div style="margin-top: auto;" class="tool-group">
+            <button id="clearCanvasBtn" class="icon-btn btn-danger-alt" title="Tühjenda lõuend">🗑️</button>
+            <button id="addToGalleryBtn" class="icon-btn btn-success-alt" title="Salvesta galeriisse">📸</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <h1>DrawApp <span style="color: var(--accent-color)"></span></h1>
+        </header>
+
+        <div class="canvas-container">
+            <canvas id="paintCanvas" width="900" height="500"></canvas>
+        </div>
+
+        <section class="gallery-section">
+            <div class="gallery-nav">
+                <h3>Minu kollektsioon</h3>
+                <button id="clearGalleryBtn" class="clear-all-btn">Kustuta kõik</button>
+            </div>
+            <div id="gallery" class="gallery-grid"></div>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const lineWidthInput = document.getElementById('lineWidth');
+        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+        const clearGalleryBtn = document.getElementById('clearGalleryBtn');
+        const addToGalleryBtn = document.getElementById('addToGalleryBtn');
+        const gallery = document.getElementById('gallery');
+
+        let painting = false;
+
+        function startPosition(e) {
+            painting = true;
+            draw(e);
+        }
+
+        function finishedPosition() {
+            painting = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!painting) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+
+            ctx.lineWidth = lineWidthInput.value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = colorPicker.value;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        canvas.addEventListener('mousedown', startPosition);
+        window.addEventListener('mouseup', finishedPosition);
+        canvas.addEventListener('mousemove', draw);
+        
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); });
+        canvas.addEventListener('touchend', finishedPosition);
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+
+        // Logic
+        clearCanvasBtn.addEventListener('click', () => {
+            if(confirm('Kas soovid joonistuse kustutada?')) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        });
+
+        addToGalleryBtn.addEventListener('click', () => {
+            const dataURL = canvas.toDataURL();
+            const galleryItem = document.createElement('div');
+            galleryItem.className = 'gallery-item';
+            
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '×';
+            delBtn.className = 'delete-card';
+            delBtn.onclick = () => galleryItem.remove();
+
+            const img = document.createElement('img');
+            img.src = dataURL;
+            
+            galleryItem.appendChild(delBtn);
+            galleryItem.appendChild(img);
+            gallery.prepend(galleryItem);
+        });
+
+        clearGalleryBtn.addEventListener('click', () => {
+            if (gallery.children.length > 0 && confirm('Tühjendada kogu galerii?')) {
+                gallery.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>
